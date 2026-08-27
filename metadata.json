@@ -1,0 +1,6 @@
+{
+  "name": "RenovEstimate AI - Renovation Estimation & Quotation System",
+  "description": "Professional AI-powered renovation estimation, BOQ calculation engine, and client quotation system for Indian construction and interior contractors.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
