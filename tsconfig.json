@@ -22,8 +22,10 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": [
-      "node"
-    ]
+    "types": [],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "strict": false
   }
 }
