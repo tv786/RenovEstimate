@@ -3,7 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 
-const app = express();
+export const app = express();
 const PORT = 3000;
 
 // Enable large JSON payloads for base64 room photos
@@ -601,4 +601,6 @@ async function startServer() {
   });
 }
 
-startServer();
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
