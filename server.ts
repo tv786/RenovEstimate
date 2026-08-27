@@ -4,7 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 
 export const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Enable large JSON payloads for base64 room photos
 app.use(express.json({ limit: '35mb' }));
@@ -23,7 +23,7 @@ function getAI(): GoogleGenAI | null {
       apiKey: apiKey,
       httpOptions: {
         headers: {
-          'User-Agent': 'aistudio-build',
+          'User-Agent': process.env.USER_AGENT || 'renovestimate-app',
         },
       },
     });
@@ -188,9 +188,9 @@ Respond ONLY with a valid JSON object strictly matching this schema:
     parts.push({ text: promptText });
 
     // Multi-model resilience fallback: if primary model is experiencing high demand (503) or rate limits (429), try alternative fast models with exponential backoff
-    const modelsToTry = ['gemini-3.7-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+    const modelsToTry = (process.env.AI_MODELS || 'gemini-3.7-flash,gemini-flash-latest,gemini-3.1-flash-lite').split(',').map(m => m.trim());
     let responseText = '';
-    let selectedModel = 'gemini-3.7-flash';
+    let selectedModel = modelsToTry[0] || 'gemini-3.7-flash';
     let generationSuccess = false;
 
     for (const modelName of modelsToTry) {
@@ -473,7 +473,7 @@ function generateIntelligentFallback(
 
   return {
     analyzedAt: new Date().toISOString(),
-    modelUsed: 'gemini-3.7-flash',
+    modelUsed: (process.env.AI_MODELS || 'gemini-3.7-flash,gemini-flash-latest,gemini-3.1-flash-lite').split(',')[0].trim() || 'gemini-3.7-flash',
     summaryNarrative: `Automated site analysis for ${projectName || 'Renovation Project'} (${floorArea} sq.ft.). Detected complete scope requirements: false ceiling reconstruction, customized wardrobe fabrication (${wardrobeWidth} R.ft.), feature wall panelling, electrical redesign, and full luxury repainting.`,
     confidenceScore: 82,
     existingElements: [
