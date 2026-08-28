@@ -282,7 +282,7 @@ export const ClientQuotationView: React.FC<ClientQuotationViewProps> = ({
               Quotation Issued To:
             </div>
             <div className="font-extrabold text-base text-black">
-              {project.clientName}
+              {project.clientName || 'Client / Site Owner'}
             </div>
             <div className="text-neutral-600 space-y-0.5">
               {project.clientPhone && <p>Phone: {project.clientPhone}</p>}

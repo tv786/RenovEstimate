@@ -112,10 +112,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-lg sm:text-2xl font-bold text-black tracking-tight">
-              Project Estimates
+              Renovation Estimates & Quotations
             </h1>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Internal site estimates, BOQs, and client quotations.
+              Aapke saare projects ka hisaab, itemized BOQ aur client quotations ek jagah.
             </p>
           </div>
 
@@ -123,76 +123,60 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={onNewEstimate}
-              className="inline-flex items-center justify-center gap-1.5 bg-[#EBA224] hover:bg-[#d8921b] text-black font-bold uppercase tracking-wider px-4 py-2 rounded-full text-xs shadow-xs transition cursor-pointer min-h-[38px] active:scale-95 flex-1 sm:flex-none"
+              className="inline-flex items-center justify-center gap-1.5 bg-[#EBA224] hover:bg-[#d8921b] text-black font-bold px-4 py-2 rounded-full text-xs shadow-xs transition cursor-pointer min-h-[38px] active:scale-95 flex-1 sm:flex-none"
             >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-              <span>New Estimate</span>
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>+ Naya Estimate Banayein</span>
             </button>
             <button
               onClick={onOpenMaterials}
-              className="inline-flex items-center justify-center gap-1.5 bg-neutral-100 hover:bg-neutral-200 text-black font-bold uppercase tracking-wider px-3.5 py-2 rounded-full text-xs border border-neutral-300 transition cursor-pointer min-h-[38px] flex-1 sm:flex-none"
+              className="inline-flex items-center justify-center gap-1.5 bg-neutral-100 hover:bg-neutral-200 text-black font-bold px-3.5 py-2 rounded-full text-xs border border-neutral-300 transition cursor-pointer min-h-[38px] flex-1 sm:flex-none"
             >
               <Layers className="w-3.5 h-3.5 text-[#EBA224]" />
-              <span>Price Master</span>
+              <span>Rate List</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-black/10 shadow-xs">
           <div className="flex items-center justify-between text-neutral-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1.5">
-            <span>Total Projects</span>
+            <span>Kul Projects (Total)</span>
             <Building2 className="w-3.5 h-3.5 text-black" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-black font-mono">
             {totalProjects}
           </div>
           <div className="mt-1 text-[11px] text-neutral-500 truncate">
-            {awaitingReview} in review • {acceptedProjects} won
+            {totalProjects === 0 ? 'Abhi koi project nahi hai' : `${totalProjects} active projects`}
           </div>
         </div>
 
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-black/10 shadow-xs">
           <div className="flex items-center justify-between text-neutral-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1.5">
-            <span>Pipeline Value</span>
+            <span>Total Value (₹)</span>
             <IndianRupee className="w-3.5 h-3.5 text-[#EBA224]" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-black font-mono truncate">
             {formatINR(totalEstimatedValue)}
           </div>
           <div className="mt-1 text-[11px] text-neutral-500 truncate">
-            Active estimates (incl. GST)
+            Total Quotation Amount (incl. GST)
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-black/10 shadow-xs">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-black/10 shadow-xs col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between text-neutral-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1.5">
-            <span>Quotations</span>
+            <span>Client Quotes (Tayyar)</span>
             <FileCheck2 className="w-3.5 h-3.5 text-black" />
           </div>
           <div className="text-xl sm:text-2xl font-bold text-black font-mono">
             {quotationsGenerated}
           </div>
           <div className="mt-1 text-[11px] text-neutral-500 truncate">
-            Generated client quotes
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-black/10 shadow-xs">
-          <div className="flex items-center justify-between text-neutral-500 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-1.5">
-            <span>AI Confidence</span>
-            <span className="text-[11px] font-bold text-black font-mono">{avgConfidence}%</span>
-          </div>
-          <div className="text-xl sm:text-2xl font-bold text-black font-mono">
-            Verified
-          </div>
-          <div className="mt-2 w-full bg-neutral-200 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="bg-[#EBA224] h-1.5 rounded-full"
-              style={{ width: `${avgConfidence}%` }}
-            />
+            Client ko bhejne ke liye ready quotations
           </div>
         </div>
       </div>
@@ -201,33 +185,40 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="bg-white rounded-2xl sm:rounded-3xl border border-black/10 shadow-xs overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-black/10 flex items-center justify-between gap-3">
           <h2 className="text-base sm:text-lg font-bold text-black">
-            All Estimates ({projects.length})
+            Saved Estimates & Quotations ({projects.length})
           </h2>
 
           <button
             onClick={onNewEstimate}
-            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-black bg-[#EBA224] hover:bg-[#d8921b] px-3.5 py-1.5 rounded-full transition cursor-pointer min-h-[32px]"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-black bg-[#EBA224] hover:bg-[#d8921b] px-3.5 py-1.5 rounded-full transition cursor-pointer min-h-[32px]"
           >
             <Plus className="w-3 h-3 stroke-[3]" />
-            <span>New</span>
+            <span>+ Naya</span>
           </button>
         </div>
 
         {projects.length === 0 ? (
-          <div className="p-8 sm:p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-neutral-100 text-black mx-auto flex items-center justify-center">
-              <FolderGit2 className="w-6 h-6" />
+          <div className="p-8 sm:p-14 text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-neutral-100 text-black mx-auto flex items-center justify-center border border-neutral-200">
+              <FolderGit2 className="w-7 h-7 text-[#EBA224]" />
             </div>
-            <p className="text-sm font-bold text-black">
-              No estimates yet
-            </p>
-            <button
-              onClick={onNewEstimate}
-              className="inline-flex items-center gap-1.5 bg-[#EBA224] hover:bg-[#d8921b] text-black text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full shadow-xs transition cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create First Estimate</span>
-            </button>
+            <div>
+              <p className="text-base font-bold text-black">
+                Abhi koi estimate nahi hai
+              </p>
+              <p className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
+                Apne naye renovation project ki site photos aur dimensions daal kar turant BOQ aur client quotation banayein.
+              </p>
+            </div>
+            <div>
+              <button
+                onClick={onNewEstimate}
+                className="inline-flex items-center gap-2 bg-[#EBA224] hover:bg-[#d8921b] text-black text-xs font-bold px-5 py-2.5 rounded-full shadow-sm transition cursor-pointer"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                <span>+ Naya Estimate / Quotation Banayein</span>
+              </button>
+            </div>
           </div>
         ) : (
           <>

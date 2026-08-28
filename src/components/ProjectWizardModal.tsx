@@ -46,45 +46,30 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [loadingMessage, setLoadingMessage] = useState<string>('Analyzing site photos...');
 
-  // Step 1: Info
-  const [projectName, setProjectName] = useState('Sharma Residence – Master Bedroom');
-  const [clientName, setClientName] = useState('Shri Vikram Sharma');
-  const [clientPhone, setClientPhone] = useState('+91 98290 88776');
-  const [clientEmail, setClientEmail] = useState('vikram.sharma.in@gmail.com');
-  const [siteLocation, setSiteLocation] = useState('Jaipur');
+  // Step 1: Info - Clean defaults for real contractor workflow
+  const [projectName, setProjectName] = useState('New Renovation Estimate');
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [siteLocation, setSiteLocation] = useState('Sagwara');
   const [projectType, setProjectType] = useState<ProjectType>('Bedroom Renovation');
-  const [notes, setNotes] = useState('Master bedroom renovation in luxury apartment. Existing Italian marble floor and double bed to be protected.');
+  const [notes, setNotes] = useState('');
 
   // Step 2: Dimensions
   const [isIrregularRoom, setIsIrregularRoom] = useState<boolean>(false);
-  const [lengthFt, setLengthFt] = useState<number>(20);
-  const [widthFt, setWidthFt] = useState<number>(20);
+  const [lengthFt, setLengthFt] = useState<number>(16);
+  const [widthFt, setWidthFt] = useState<number>(14);
   const [heightFt, setHeightFt] = useState<number>(10);
   const [sections, setSections] = useState<RoomSection[]>([]);
   const [openings, setOpenings] = useState<OpeningDeduction[]>([
-    { id: 'op-1', type: 'Door', widthFt: 3.5, heightFt: 7, quantity: 1 },
-    { id: 'op-2', type: 'Window', widthFt: 5, heightFt: 5, quantity: 1 }
+    { id: 'op-1', type: 'Door', widthFt: 3, heightFt: 7, quantity: 1 },
+    { id: 'op-2', type: 'Window', widthFt: 4, heightFt: 4, quantity: 1 }
   ]);
   const [wardrobeWidthRFt, setWardrobeWidthRFt] = useState<number>(8);
   const [bedBackWallWidthFt, setBedBackWallWidthFt] = useState<number>(11);
 
-  // Step 3: Photos
-  const [images, setImages] = useState<UploadedImage[]>([
-    {
-      id: 'img-demo-1',
-      name: 'Master_Bedroom_View_1.jpg',
-      dataUrl: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80',
-      caption: 'Existing ceiling and bed wall condition',
-      uploadedAt: new Date().toISOString()
-    },
-    {
-      id: 'img-demo-2',
-      name: 'Master_Bedroom_Desk_Niche.jpg',
-      dataUrl: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
-      caption: 'Existing laptop desk to be replaced with full-height wardrobe',
-      uploadedAt: new Date().toISOString()
-    }
-  ]);
+  // Step 3: Photos - Clean empty initial list
+  const [images, setImages] = useState<UploadedImage[]>([]);
 
   // Step 4: Client Requirements
   const [requirements, setRequirements] = useState<ClientRequirementsStructured>({
@@ -95,8 +80,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
     painting: 'Repaint',
     electrical: 'Modify',
     plumbing: 'Keep',
-    customNotes:
-      'Client wants to change the POP ceiling design with warm LED cove lighting, replace the existing laptop desk with a full-height 8 R.ft sliding wardrobe, and redesign the wall behind the bed with fluted louvers. Existing double bed and Italian marble flooring must be strictly protected and remain.'
+    customNotes: ''
   });
 
   // Step 5: Quality Tier & Mode
@@ -112,7 +96,65 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
     openings
   );
 
-  // Photo handlers
+  // Scan single image with AI for real-time 3-4 point vision summary
+  const scanImageWithAI = async (imgId: string, dataUrl: string, name: string) => {
+    try {
+      setImages((prev) =>
+        prev.map((im) =>
+          im.id === imgId
+            ? { ...im, aiScanDetails: { ...im.aiScanDetails, isScanning: true, error: undefined } }
+            : im
+        )
+      );
+
+      const res = await fetch('/api/ai/scan-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageDataUrl: dataUrl, imageName: name })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setImages((prev) =>
+          prev.map((im) =>
+            im.id === imgId
+              ? {
+                  ...im,
+                  aiScanDetails: {
+                    roomType: data.roomType || 'AI Vision Scan',
+                    summaryPoints: Array.isArray(data.summaryPoints) ? data.summaryPoints : [],
+                    confidence: data.confidence || 90,
+                    modelUsed: data.modelUsed,
+                    isScanning: false,
+                    error: undefined
+                  }
+                }
+              : im
+          )
+        );
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'AI could not analyze this image');
+      }
+    } catch (err: any) {
+      console.warn('Image scan error:', err);
+      setImages((prev) =>
+        prev.map((im) =>
+          im.id === imgId
+            ? {
+                ...im,
+                aiScanDetails: {
+                  isScanning: false,
+                  error: err?.message || 'Could not analyze photo. Click Re-scan to try again.'
+                }
+              }
+            : im
+        )
+      );
+    }
+  };
+
+  // Photo upload handlers
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -121,13 +163,22 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
+          const imgId = 'img-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+          const dataUrl = event.target.result as string;
           const newImg: UploadedImage = {
-            id: 'img-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+            id: imgId,
             name: file.name,
-            dataUrl: event.target.result as string,
-            uploadedAt: new Date().toISOString()
+            dataUrl: dataUrl,
+            uploadedAt: new Date().toISOString(),
+            aiScanDetails: {
+              isScanning: true,
+              hinglishSummary: 'AI photo scan kar raha hai (Checking ceiling, walls, furniture)...'
+            }
           };
           setImages((prev) => [...prev, newImg]);
+
+          // Automatically trigger scan for transparent AI feedback
+          scanImageWithAI(imgId, dataUrl, file.name);
         }
       };
       reader.readAsDataURL(file);
@@ -541,13 +592,13 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
               <Sparkles className="w-4 h-4 text-black" />
             </div>
             <div>
-              <h2 className="font-bold text-base sm:text-lg text-white tracking-tight">New Renovation Project</h2>
+              <h2 className="font-bold text-base sm:text-lg text-white tracking-tight">Naya Renovation Estimate</h2>
               <p className="text-[11px] text-neutral-400">
-                Step {step} of 5 — {step === 1 && 'Project Details'}
-                {step === 2 && 'Room Dimensions'}
-                {step === 3 && 'Site Photos'}
-                {step === 4 && 'Scope of Work'}
-                {step === 5 && 'Quality & Estimate'}
+                Step {step} / 5 — {step === 1 && '1. Client aur Project Details'}
+                {step === 2 && '2. Kamre ka Size (Dimensions)'}
+                {step === 3 && '3. Site Photos & AI Verification'}
+                {step === 4 && '4. Kya Kaam Karna Hai (Scope of Work)'}
+                {step === 5 && '5. Quality & BOQ Generation'}
               </p>
             </div>
           </div>
@@ -568,12 +619,12 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
           <div className="w-3 sm:w-6 h-px bg-neutral-200 shrink-0" />
           <div className={`flex items-center gap-1 shrink-0 ${step >= 2 ? 'text-black font-bold' : 'text-neutral-400'}`}>
             <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-mono ${step >= 2 ? 'bg-black text-[#EBA224]' : 'bg-neutral-200 text-neutral-500'}`}>2</span>
-            <span className="hidden sm:inline">Dimensions</span>
+            <span className="hidden sm:inline">Naap (Size)</span>
           </div>
           <div className="w-3 sm:w-6 h-px bg-neutral-200 shrink-0" />
           <div className={`flex items-center gap-1 shrink-0 ${step >= 3 ? 'text-black font-bold' : 'text-neutral-400'}`}>
             <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-mono ${step >= 3 ? 'bg-black text-[#EBA224]' : 'bg-neutral-200 text-neutral-500'}`}>3</span>
-            <span className="hidden sm:inline">Photos</span>
+            <span className="hidden sm:inline">Photos (AI)</span>
           </div>
           <div className="w-3 sm:w-6 h-px bg-neutral-200 shrink-0" />
           <div className={`flex items-center gap-1 shrink-0 ${step >= 4 ? 'text-black font-bold' : 'text-neutral-400'}`}>
@@ -583,7 +634,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
           <div className="w-3 sm:w-6 h-px bg-neutral-200 shrink-0" />
           <div className={`flex items-center gap-1 shrink-0 ${step >= 5 ? 'text-black font-bold' : 'text-neutral-400'}`}>
             <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-mono ${step >= 5 ? 'bg-black text-[#EBA224]' : 'bg-neutral-200 text-neutral-500'}`}>5</span>
-            <span className="hidden sm:inline">Generate</span>
+            <span className="hidden sm:inline">Estimate</span>
           </div>
         </div>
 
@@ -595,46 +646,46 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-                    Project Name *
+                    Project Name
                   </label>
                   <input
                     type="text"
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="e.g. Sharma Residence – Master Bedroom"
+                    placeholder="e.g. Master Bedroom Renovation ya Main Door Work"
                     className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-2xl text-sm font-semibold text-black focus:bg-white focus:ring-2 focus:ring-black outline-hidden"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-                    Client Name *
+                    Client Name <span className="text-neutral-400 font-normal lowercase">(optional)</span>
                   </label>
                   <input
                     type="text"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
-                    placeholder="e.g. Shri Vikram Sharma"
+                    placeholder="e.g. Vikram Sharma (Khali chhod sakte hain)"
                     className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-2xl text-sm text-black focus:bg-white focus:ring-2 focus:ring-black outline-hidden"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-                    Client Phone
+                    Client Phone <span className="text-neutral-400 font-normal lowercase">(optional)</span>
                   </label>
                   <input
                     type="text"
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="e.g. +91 98290 88776"
+                    placeholder="e.g. +91 98290 88776 (Optional)"
                     className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-2xl text-sm font-mono text-black focus:bg-white focus:ring-2 focus:ring-black outline-hidden"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-                    Site Location / City *
+                    Site Location / City
                   </label>
                   <select
                     value={siteLocation}
@@ -894,7 +945,7 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
             </div>
           )}
 
-          {/* STEP 3: PHOTO UPLOAD */}
+          {/* STEP 3: PHOTO UPLOAD & AI VISION VERIFICATION */}
           {step === 3 && (
             <div className="space-y-6">
               <div className="border-2 border-dashed border-neutral-300 hover:border-black rounded-3xl p-6 sm:p-8 text-center bg-neutral-50 transition">
@@ -914,45 +965,150 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
                     <Upload className="w-6 h-6" />
                   </div>
                   <div className="font-bold text-base text-black">
-                    Click to browse or drag & drop room photos
+                    Yahan Site Photos Upload karein (Click ya Drag & Drop)
                   </div>
-                  <p className="text-xs text-neutral-500 max-w-sm">
-                    Upload 1 to 8 clear photos of the room (ceiling, walls, wardrobe niche, floor). JPG, PNG, WEBP supported.
+                  <p className="text-xs text-neutral-500 max-w-md">
+                    Kamre ki 1 se 8 saaf photos attach karein (Ceiling, Deewar, Almari Niche, Flooring). AI turant photo scan karke items detect karega.
                   </p>
                 </label>
               </div>
 
-              {/* Uploaded Images Grid */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-black">
-                  <span>Attached Photos ({images.length})</span>
-                  <span className="text-neutral-500 normal-case font-normal">Gemini vision will analyze visible conditions</span>
+              {/* Uploaded Images & AI Detection List */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-xs font-bold text-black">
+                  <span className="uppercase tracking-wider">Attached Site Photos ({images.length})</span>
+                  <span className="text-neutral-500 font-normal">AI har photo ka vivaran neeche dikhayega</span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {images.map((img) => (
-                    <div
-                      key={img.id}
-                      className="relative rounded-2xl overflow-hidden border border-neutral-200 group bg-neutral-100 h-28"
-                    >
-                      <img
-                        src={img.dataUrl}
-                        alt={img.name}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() => removeImage(img.id)}
-                        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/70 hover:bg-red-600 text-white transition cursor-pointer"
+                {images.length === 0 ? (
+                  <div className="p-6 bg-neutral-100 rounded-2xl text-center text-xs text-neutral-500 border border-neutral-200">
+                    Abhi koi photo add nahi ki gayi hai. Aap seedha aage bhi badh sakte hain ya site photos attach karke AI se accurate estimate le sakte hain.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {images.map((img, idx) => (
+                      <div
+                        key={img.id}
+                        className="p-4 bg-white border border-neutral-200 rounded-2xl shadow-xs space-y-3"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="absolute bottom-0 inset-x-0 bg-black/70 p-1 text-[10px] text-white truncate px-2 font-mono">
-                        {img.name}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          {/* Image Thumbnail */}
+                          <div className="relative w-full sm:w-44 h-36 rounded-xl overflow-hidden bg-neutral-100 shrink-0 border border-neutral-200">
+                            <img
+                              src={img.dataUrl}
+                              alt={img.name}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              onClick={() => removeImage(img.id)}
+                              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/80 hover:bg-red-600 text-white transition cursor-pointer"
+                              title="Delete photo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <div className="absolute bottom-0 inset-x-0 bg-black/80 p-1 text-[10px] text-white truncate px-2 font-mono">
+                              Photo #{idx + 1}: {img.name}
+                            </div>
+                          </div>
+
+                          {/* AI Detection Summary Card */}
+                          <div className="flex-1 space-y-2.5">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <Sparkles className="w-4 h-4 text-[#EBA224]" />
+                                <span className="text-xs font-bold text-black uppercase tracking-wider">
+                                  {img.aiScanDetails?.roomType || 'AI Vision Scan'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {img.aiScanDetails?.confidence && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-100 text-neutral-700 border border-neutral-200">
+                                    {img.aiScanDetails.confidence}% Verified
+                                  </span>
+                                )}
+                                {img.aiScanDetails?.isScanning ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EBA224]/20 text-black border border-[#EBA224]">
+                                    <Loader2 className="w-3 h-3 animate-spin text-[#EBA224]" />
+                                    AI Scanning...
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => scanImageWithAI(img.id, img.dataUrl, img.name)}
+                                    className="text-[10px] font-bold text-neutral-500 hover:text-black transition cursor-pointer"
+                                  >
+                                    🔄 Re-scan
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* AI Summary Box - 3-4 Points from AI */}
+                            <div className="p-3.5 bg-neutral-50 border border-neutral-200 rounded-xl text-xs space-y-2.5">
+                              {img.aiScanDetails?.isScanning ? (
+                                <div className="flex items-center gap-2.5 text-neutral-700 py-3">
+                                  <Loader2 className="w-4 h-4 animate-spin text-[#EBA224]" />
+                                  <span className="font-medium">AI vision is inspecting image details and preparing 3-4 point summary...</span>
+                                </div>
+                              ) : img.aiScanDetails?.error ? (
+                                <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 space-y-1.5">
+                                  <div className="font-medium text-xs">⚠️ {img.aiScanDetails.error}</div>
+                                  <button
+                                    type="button"
+                                    onClick={() => scanImageWithAI(img.id, img.dataUrl, img.name)}
+                                    className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[11px] font-bold transition cursor-pointer inline-flex items-center gap-1"
+                                  >
+                                    🔄 Retry Scan
+                                  </button>
+                                </div>
+                              ) : img.aiScanDetails?.summaryPoints && img.aiScanDetails.summaryPoints.length > 0 ? (
+                                <div className="space-y-2">
+                                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#91620a] flex items-center justify-between">
+                                    <span className="flex items-center gap-1">
+                                      <Sparkles className="w-3 h-3 text-[#EBA224]" />
+                                      AI Image Summary (Key Observations):
+                                    </span>
+                                    {img.aiScanDetails.modelUsed && (
+                                      <span className="text-[9px] font-mono text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                                        {img.aiScanDetails.modelUsed}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <ul className="space-y-1.5">
+                                    {img.aiScanDetails.summaryPoints.map((point, ptIdx) => (
+                                      <li
+                                        key={ptIdx}
+                                        className="flex items-start gap-2 bg-white p-2.5 rounded-lg border border-neutral-200/90 text-neutral-900 leading-relaxed"
+                                      >
+                                        <span className="w-4 h-4 rounded-full bg-[#EBA224]/20 text-[#91620a] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                          {ptIdx + 1}
+                                        </span>
+                                        <span className="text-xs font-medium text-black">{point}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between py-2 text-neutral-600">
+                                  <span>Photo attached. Click below to analyze with AI vision.</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => scanImageWithAI(img.id, img.dataUrl, img.name)}
+                                    className="px-2.5 py-1 bg-black text-white rounded-lg text-xs font-bold hover:bg-neutral-800 transition cursor-pointer"
+                                  >
+                                    ⚡ Analyze with AI
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1204,10 +1360,10 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
               type="button"
               onClick={() => setStep(step - 1)}
               disabled={isAnalyzing}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider text-black bg-white border border-neutral-300 hover:bg-neutral-100 transition min-h-[38px] cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-black bg-white border border-neutral-300 hover:bg-neutral-100 transition min-h-[38px] cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back</span>
+              <span>← Peeche</span>
             </button>
           ) : (
             <div />
@@ -1217,9 +1373,9 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
             <button
               type="button"
               onClick={() => setStep(step + 1)}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider bg-black hover:bg-neutral-800 text-[#EBA224] shadow-xs transition min-h-[38px] cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-bold bg-black hover:bg-neutral-800 text-[#EBA224] shadow-xs transition min-h-[38px] cursor-pointer active:scale-95"
             >
-              <span>Next</span>
+              <span>Aage Badhein</span>
               <ArrowRight className="w-3.5 h-3.5 text-[#EBA224]" />
             </button>
           ) : (
@@ -1227,17 +1383,17 @@ export const ProjectWizardModal: React.FC<ProjectWizardModalProps> = ({
               type="button"
               onClick={handleRunAIAnalysis}
               disabled={isAnalyzing}
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-black hover:bg-neutral-800 text-[#EBA224] shadow-md transition min-h-[40px] cursor-pointer disabled:opacity-75 active:scale-95"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-xs font-bold bg-[#EBA224] hover:bg-[#d8921b] text-black shadow-md transition min-h-[42px] cursor-pointer disabled:opacity-75 active:scale-95"
             >
               {isAnalyzing ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#EBA224]" />
-                  <span className="truncate max-w-[200px] sm:max-w-none">{loadingMessage}</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-black" />
+                  <span className="truncate max-w-[200px] sm:max-w-none font-bold">{loadingMessage}</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-[#EBA224]" />
-                  <span>Generate BOQ</span>
+                  <Sparkles className="w-4 h-4 text-black" />
+                  <span>✨ BOQ aur Estimate Banayein</span>
                 </>
               )}
             </button>

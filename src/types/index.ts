@@ -93,12 +93,33 @@ export interface ClientRequirementsStructured {
   customNotes: string;
 }
 
+export interface ImageScanDetails {
+  roomType?: string;
+  whatIsVisible?: string;
+  summaryPoints?: string[];
+  visualDetails?: {
+    colorAndFinish?: string;
+    materialType?: string;
+    hardwareFittings?: string;
+    conditionNotes?: string;
+  };
+  hinglishSummary?: string;
+  detectedItems?: string[];
+  suggestedWork?: string[];
+  estimatedDimensions?: string;
+  confidence?: number;
+  isScanning?: boolean;
+  error?: string;
+  modelUsed?: string;
+}
+
 export interface UploadedImage {
   id: string;
   name: string;
   dataUrl: string; // base64 or object URL
   caption?: string;
   uploadedAt: string;
+  aiScanDetails?: ImageScanDetails;
 }
 
 export interface ExistingElement {

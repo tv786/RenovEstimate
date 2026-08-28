@@ -2,15 +2,16 @@ import { MaterialItem, LabourRate, CompanySettings, QualityTier } from '../types
 
 export const DEFAULT_LOCATIONS = [
   'All',
+  'Sagwara',
+  'Dungarpur',
+  'Banswara',
+  'Udaipur',
   'Jaipur',
+  'Ahmedabad',
   'Delhi NCR',
   'Mumbai',
   'Bengaluru',
-  'Hyderabad',
-  'Ahmedabad',
   'Pune',
-  'Kolkata',
-  'Chennai',
 ];
 
 export const DEFAULT_MATERIALS: MaterialItem[] = [

@@ -17,12 +17,12 @@ import {
 import { calculateBOQItemRow, calculateCostSummary } from '../utils/calculationEngine';
 
 const STORAGE_KEYS = {
-  PROJECTS: 'renov_projects_v3',
+  PROJECTS: 'renov_projects_v4_clean',
   MATERIALS: 'renov_materials_v1',
   LABOUR: 'renov_labour_v1',
   SETTINGS: 'renov_settings_v1',
-  PRICE_HISTORY: 'renov_price_history_v1',
-  ACTUAL_COSTS: 'renov_actual_costs_v1',
+  PRICE_HISTORY: 'renov_price_history_v2_clean',
+  ACTUAL_COSTS: 'renov_actual_costs_v2_clean',
 };
 
 export class StorageService {
@@ -126,32 +126,7 @@ export class StorageService {
     } catch (e) {
       console.error('Failed to parse price history', e);
     }
-    return [
-      {
-        id: 'ph-init-1',
-        itemId: 'mat-carp-02',
-        itemName: 'BWP Grade Marine Plywood (18mm 710)',
-        type: 'material',
-        previousRate: 135,
-        newRate: 145,
-        unit: 'sq.ft.',
-        changedBy: 'Er. Rajesh Varma',
-        timestamp: '2026-08-15T09:30:00Z',
-        reason: 'Timber & resin price hike by manufacturer'
-      },
-      {
-        id: 'ph-init-2',
-        itemId: 'mat-carp-04',
-        itemName: 'Wardrobe Box with Internal Laminate',
-        type: 'material',
-        previousRate: 8800,
-        newRate: 9200,
-        unit: 'R.ft.',
-        changedBy: 'Er. Rajesh Varma',
-        timestamp: '2026-08-10T14:20:00Z',
-        reason: 'Adhesive and edge-banding rate escalation'
-      }
-    ];
+    return [];
   }
 
   static addPriceHistory(entry: PriceHistoryEntry): void {
@@ -166,19 +141,14 @@ export class StorageService {
       const data = localStorage.getItem(STORAGE_KEYS.PROJECTS);
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
     } catch (e) {
       console.error('Failed to parse projects from storage', e);
     }
-
-    // Seed Demo Master Bedroom Project
-    const demoProject = this.createDemoProject();
-    const initialList = [demoProject];
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(initialList));
-    return initialList;
+    return [];
   }
 
   static getProjectById(id: string): Project | null {
@@ -213,51 +183,7 @@ export class StorageService {
     } catch (e) {
       console.error('Failed to parse actual costs', e);
     }
-    return [
-      {
-        projectId: 'demo-proj-completed-01',
-        completedDate: '2026-08-10',
-        totalEstimatedSellingPrice: 510000,
-        totalEstimatedInternalCost: 410000,
-        totalActualCost: 438000,
-        netVarianceAmount: 28000,
-        netVariancePercent: 6.8,
-        items: [
-          {
-            boqItemId: 'item-demo-1',
-            workDescription: 'POP Demolition & Disposal',
-            estimatedAmount: 12000,
-            actualAmount: 13800,
-            varianceAmount: 1800,
-            variancePercent: 15,
-            notes: 'Extra hidden cornice framework had to be chipped out manually'
-          },
-          {
-            boqItemId: 'item-demo-2',
-            workDescription: 'Full Height Sliding Wardrobe Fabrication',
-            estimatedAmount: 115000,
-            actualAmount: 122000,
-            varianceAmount: 7000,
-            variancePercent: 6.1,
-            notes: 'Client upgraded to soft-close slide channels and heavy aluminum handles'
-          },
-          {
-            boqItemId: 'item-demo-3',
-            workDescription: 'Bed-Back Feature Wall Paneling',
-            estimatedAmount: 42000,
-            actualAmount: 46500,
-            varianceAmount: 4500,
-            variancePercent: 10.7,
-            notes: 'Extra brass inlay profiles requested during fabrication'
-          }
-        ],
-        learningInsights: [
-          'POP demolition on older ceilings consistently incurs ~10-15% higher labor due to embedded mesh and debris disposal.',
-          'Wardrobe and carpentry estimates are generally tight within ±6% variance.',
-          'Electrical modifications often exceed initial wire run estimates by ~8%.'
-        ]
-      }
-    ];
+    return [];
   }
 
   static saveActualCost(record: ActualProjectCostRecord): void {

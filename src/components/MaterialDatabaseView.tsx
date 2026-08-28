@@ -467,31 +467,6 @@ export const MaterialDatabaseView: React.FC<MaterialDatabaseViewProps> = ({
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="block font-bold text-black uppercase tracking-wider mb-1.5">
-                  Updated By
-                </label>
-                <input
-                  type="text"
-                  value={editChangedBy}
-                  onChange={(e) => setEditChangedBy(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-2xl font-medium text-black focus:bg-white focus:ring-2 focus:ring-black outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-black uppercase tracking-wider mb-1.5">
-                  Reason for Revision (Logged to History)
-                </label>
-                <input
-                  type="text"
-                  value={editReason}
-                  onChange={(e) => setEditReason(e.target.value)}
-                  placeholder="e.g. Manufacturer rate hike"
-                  className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-300 rounded-2xl text-black focus:bg-white focus:ring-2 focus:ring-black outline-hidden"
-                />
-              </div>
             </div>
 
             <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-200 flex justify-end gap-3 text-xs">
@@ -505,7 +480,7 @@ export const MaterialDatabaseView: React.FC<MaterialDatabaseViewProps> = ({
                 onClick={handleSaveEdit}
                 className="px-6 py-2.5 rounded-full bg-black hover:bg-neutral-800 text-[#EBA224] font-bold uppercase tracking-wider shadow-xs transition min-h-[44px] cursor-pointer"
               >
-                Save & Record History
+                Save Rate
               </button>
             </div>
           </div>
